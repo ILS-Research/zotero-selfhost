@@ -18,6 +18,10 @@ export type SessionData = {
 	loginCsrf?: Record<string, string>;
 	groupsCsrf?: string;
 	groupsFlash?: { error: boolean; text: string };
+	keysCsrf?: string;
+	keysFlash?: { error: boolean; text: string };
+	/** A key just created, shown once */
+	keysCreated?: { name: string; key: string };
 };
 
 const COOKIE = 'zotero_portal';

@@ -153,6 +153,12 @@ With OIDC, users are created by the portal on their first login. By hand, e.g. f
   Owner and admins add colleagues by username or email; accounts exist once a colleague has logged in, so
   there are no invitations. Only the owner manages admins, changes settings, hands the group over or
   deletes it; members can leave. The desktop client's "New Group…" opens zotero.org and doesn't work here.
+- **API keys for users:** at `<WEB_LIBRARY_URL>/settings/keys` (under the username in the web-library menu)
+  users create and delete keys for other programs, like the key page on zotero.org. The full key is shown
+  once. Kinds: *Semantic Scholar Bridge* (no library access, only read access to the shared group, so the
+  key proves membership: set the bridge's `ZOTERO_API_URL` to this server's API and `ZOTERO_GROUP_IDS` to the
+  shared group), *read* and *read and write* (own library and all groups). The web-library's own key is
+  not listed; keys of desktop clients are, and deleting one stops that client's sync.
 - Storage quota for new users comes from `ZOTERO_STORAGE_QUOTA_MB` (default: unlimited).
 
 ## User guide
