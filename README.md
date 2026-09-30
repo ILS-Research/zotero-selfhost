@@ -128,6 +128,8 @@ OIDC_CLIENT_SECRET=...
 - The desktop client's "Log In" opens `<WEB_LIBRARY_URL>/login` in the browser; after the login the user
   confirms the connection, and the client receives its API key.
 - Every user who can log in at the provider gets an account; restrict access in the provider if needed.
+- If the provider's certificate comes from an internal CA, put the CA certificate (PEM, file name ending
+  in `.crt`) into `data/ca-certificates/` and restart the portal; it adds the files to its trusted CAs on start.
 
 ## Users and groups
 
