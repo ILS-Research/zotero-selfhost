@@ -218,6 +218,49 @@ def portal_password_tests(oidc):
 		f"{status} {body[:200]}")
 	adminID = page.split('"userId":"', 1)[-1].split('"', 1)[0]
 	portal_group_tests(get, adminID)
+	portal_key_tests(get, adminID)
+
+
+def portal_key_tests(get, userID):
+	"""API keys in the portal: the bridge key proves membership of the shared group and nothing else"""
+	name = f'Smoke test key {os.urandom(4).hex()}'
+	status, _, page = get('/settings/keys')
+	if not check('Keys: page served', status == 200 and 'value="create"' in page, status):
+		return
+	status, _, _ = get('/settings/keys', {'csrf': 'bogus', 'action': 'create', 'name': name, 'kind': 'bridge'})
+	check('Keys: form without valid CSRF token rejected', status == 403, status)
+	csrf = csrf_of(page)
+	status, headers, _ = get('/settings/keys', {'csrf': csrf, 'action': 'create', 'name': name, 'kind': 'bridge'})
+	_, _, page = get('/settings/keys')
+	key = page.split('<code class="key', 1)[-1].split('>', 1)[-1].split('<', 1)[0] if 'class="key' in page else ''
+	if not check('Keys: bridge key created and shown once', status == 303 and 'class="ok"' in page and len(key) >= 20, status):
+		return
+	try:
+		check('Keys: full key not shown again', key not in get('/settings/keys')[2])
+		status, _, info = api('GET', '/keys/current', key=key)
+		check('Keys: bridge key identifies the user', status == 200 and str(info.get('userID')) == str(userID), f"{status} {info}")
+		status, _, groups = api('GET', f'/users/{userID}/groups', key=key)
+		check('Keys: bridge key lists the shared group', status == 200 and (len(groups) > 0 or not ENV.get('SHARED_GROUP_OWNER')),
+			f"{status} {groups}")
+		status, _, _ = api('GET', f'/users/{userID}/items?limit=1', key=key)
+		check('Keys: bridge key cannot read the personal library', status == 403, status)
+		if groups:
+			status, _, _ = api('POST', f"/groups/{groups[0]['id']}/items", [{'itemType': 'book', 'title': 'x'}], key=key)
+			check('Keys: bridge key cannot write to the group', status == 403, status)
+		_, _, page = get('/settings/keys')
+		check('Keys: listed masked', name in page and '…' + key[-4:] in page and key not in page)
+		added = page.split(f'name="id" value="{key[-4:]}"', 1)[-1].split('name="added" value="', 1)[-1].split('"', 1)[0]
+		get('/settings/keys', {'csrf': csrf, 'action': 'delete', 'id': key[-4:], 'added': added})
+		check('Keys: delete needs confirmation', api('GET', '/keys/current', key=key)[0] == 200)
+		get('/settings/keys', {'csrf': csrf, 'action': 'delete', 'id': key[-4:], 'added': added, 'confirm': '1'})
+		status = api('GET', '/keys/current', key=key)[0]
+		check('Keys: deleted key no longer works', status in (403, 404), status)
+		key = ''
+	finally:
+		if key:
+			api('DELETE', f'/keys/{key}', key=key)
+	status, _, page = get('/')
+	check('Keys: web-library menu links to the API keys', '"href":"/settings/keys"' in page)
 
 
 def portal_group_tests(admin, adminID):

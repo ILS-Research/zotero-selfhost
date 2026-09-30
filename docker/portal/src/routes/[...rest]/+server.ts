@@ -27,12 +27,13 @@ export const GET: RequestHandler = async ({ locals }) => {
 			{ label: 'My Library', href: '/', active: true },
 			{ label: t('Groups'), href: '/settings/groups' },
 			...downloads,
-			{ label: user.username, dropdown: true, truncate: true, entries: [{ label: t('Log out'), href: '/logout' }] }
+			{ label: user.username, dropdown: true, truncate: true, entries: [{ label: t('API keys'), href: '/settings/keys' }, { label: t('Log out'), href: '/logout' }] }
 		],
 		mobile: [
 			{ label: 'My Library', href: '/', active: true },
 			{ label: t('Groups'), href: '/settings/groups' },
 			...downloads,
+			{ label: t('API keys'), href: '/settings/keys' },
 			{ label: t('Log out'), href: '/logout' }
 		]
 	};
