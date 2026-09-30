@@ -7,6 +7,7 @@ import { Session } from '$lib/server/session';
 import { pickLanguage, translator } from '$lib/i18n';
 import { safeReturnTo, startLogin } from '$lib/server/login';
 import { getOrCreateUser } from '$lib/server/accounts';
+import { bridgeEnabled } from '$lib/server/bridge';
 
 const CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action 'self'";
 
@@ -15,6 +16,8 @@ function isPublic(path: string): boolean {
 	return (config.useOIDC && (path === '/oidc/start' || path === '/oidc/callback'))
 		|| (config.passwordLogin && path === '/signin')
 		|| path === '/logout'
+		// The Semantic Scholar Bridge checks logins itself (bearer token or API key)
+		|| (bridgeEnabled() && (path === '/s2' || path.startsWith('/s2/')))
 		// Public on purpose: Zotero checks plugin updates without a session
 		|| path === '/downloads' || path.startsWith('/downloads/');
 }
@@ -23,7 +26,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Forms are plain HTML posts. Kit answers posts without "Accept: text/html" (e.g. from scripts)
 	// with JSON meant for its client-side forms, which the portal doesn't use.
 	const accept = event.request.headers.get('accept') ?? '';
-	if (event.request.method === 'POST' && !accept.includes('text/html') && !event.url.pathname.startsWith('/translate/')) {
+	if (event.request.method === 'POST' && !accept.includes('text/html') && !event.url.pathname.startsWith('/translate/') && !event.url.pathname.startsWith('/s2/')) {
 		event.request.headers.set('accept', 'text/html');
 	}
 	const { url, request, cookies } = event;
