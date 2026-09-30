@@ -173,6 +173,35 @@ services:
     networks: [translate]
     restart: unless-stopped
 
+  # Optional (profile s2-bridge): Semantic Scholar Bridge, shares one Semantic Scholar API key with
+  # the users (Semantic Zotero, MCP servers). Reached only through the portal (<WEB_LIBRARY_URL>/s2/),
+  # it checks logins itself: OIDC tokens and/or API keys of members of the shared group (created in
+  # the portal under API keys), checked against this dataserver. See README.
+  s2-bridge:
+    profiles: [s2-bridge]
+    build: ./src/server/s2-bridge
+    image: zotero-s2-bridge
+    environment:
+      S2_API_KEY: ${S2_BRIDGE_S2_API_KEY:-}
+      AUTH: ${S2_BRIDGE_AUTH:-zotero-group}
+      OIDC_ISSUER: ${S2_BRIDGE_OIDC_ISSUER:-}
+      OIDC_AUDIENCE: ${S2_BRIDGE_OIDC_AUDIENCE:-}
+      OIDC_CLIENT_SCOPES: ${S2_BRIDGE_OIDC_CLIENT_SCOPES:-}
+      OIDC_REQUIRED_ROLES: ${S2_BRIDGE_OIDC_REQUIRED_ROLES:-}
+      OIDC_REQUIRED_GROUPS: ${S2_BRIDGE_OIDC_REQUIRED_GROUPS:-}
+      ZOTERO_API_URL: http://dataserver
+      # Set by the portal; sent to the dataserver as Zotero-Forwarded-For
+      CLIENT_IP_HEADER: x-real-ip
+      ZOTERO_GROUP_IDS: ${S2_BRIDGE_ZOTERO_GROUP_IDS:-}
+      RATE_PER_SEC: ${S2_BRIDGE_RATE_PER_SEC:-1}
+      MAX_QUEUED_PER_USER: ${S2_BRIDGE_MAX_QUEUED_PER_USER:-10}
+    volumes:
+      # Same extra CAs as the portal, e.g. for the OIDC provider
+      - ./data/ca-certificates:/usr/local/share/ca-certificates/extra:ro
+    depends_on:
+      - dataserver
+    restart: unless-stopped
+
   # Login (OIDC or password), per-user web-library page and desktop client login
   portal:
     build:
@@ -198,6 +227,8 @@ services:
       API_SCHEME: ${API_SCHEME:?}
       API_AUTHORITY: ${API_AUTHORITY:?}
       STREAMING_URL: ${STREAMING_URL:?}
+      # Set when the s2-bridge profile runs: the portal forwards /s2/ to it
+      S2_BRIDGE_URL: ${S2_BRIDGE_URL:-}
     volumes:
       # Public downloads page and files (/downloads), see README
       - ./data/downloads:/var/www/downloads:ro

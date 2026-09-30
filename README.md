@@ -21,6 +21,7 @@ previous package: see [Upgrading from the 2021 package](#upgrading-from-the-2021
 | `portal` | built, SvelteKit (Node 22) | Login (OIDC and/or password), per-user web-library page, desktop client browser login |
 | `tinymce-clean` | built, Node 22 | Sanitizes note HTML for the dataserver |
 | `translation-server` | built, Node 24 | Metadata for "Add by identifier" (DOI, ISBN, PMID, arXiv) and URLs in the web-library |
+| `s2-bridge` | built, SvelteKit (Node 22), optional | [Semantic Scholar Bridge](https://github.com/ILS-Research/semantic-scholar-api-key-bridge-for-semantic-zotero): one shared Semantic Scholar API key for the users, under `<WEB_LIBRARY_URL>/s2/` |
 | `mysql` | `mysql:8.4` | Master, shard, ID and user databases |
 | `garage` | `dxflrs/garage` | S3-compatible file storage |
 | `redis` | `valkey/valkey` | Rate limits and notifications |
@@ -196,6 +197,27 @@ The portal serves `data/downloads/` at `/downloads`, **without login**: Zotero c
 The directory is mounted read-only; changes take effect immediately, no restart needed. `init-data` creates it
 and gives it to `DOWNLOADS_OWNER` (`uid:gid`, default root), so a host user can publish without root.
 Files must be world-readable.
+
+## Semantic Scholar Bridge (optional)
+
+The service `s2-bridge` shares one [Semantic Scholar](https://www.semanticscholar.org/product/api) API key
+with the users, e.g. for the Zotero plugin Semantic Zotero or an MCP server of an AI assistant. It is
+built from the submodule `src/server/s2-bridge` and reached only through the portal at
+`<WEB_LIBRARY_URL>/s2/` (status page there; no reverse proxy route of its own). `/s2/` needs no portal
+login: the bridge checks every request itself.
+
+- Enable it in `.env` with `COMPOSE_PROFILES=s2-bridge` and `S2_BRIDGE_URL=http://s2-bridge:8080`, set
+  `S2_BRIDGE_S2_API_KEY` and the logins (`S2_BRIDGE_*`, see `.env.example`), then
+  `docker compose up -d --build s2-bridge portal`.
+- **API keys (`S2_BRIDGE_AUTH=zotero-group`):** users create a key of the kind "Semantic Scholar Bridge"
+  on the portal page "API keys". The bridge checks it against this dataserver (membership of
+  `S2_BRIDGE_ZOTERO_GROUP_IDS`, normally the shared group). The portal passes the client address on, and
+  the bridge sends it to the dataserver as `Zotero-Forwarded-For`: the dataserver blocks an address for
+  5 minutes after more than 5 invalid keys, and this way only the sender, not the bridge.
+- **OIDC (`oidc`, or both: `oidc,zotero-group`):** access tokens of a public client with PKCE (redirect
+  URI for Semantic Zotero: `http://127.0.0.1:23119/semanticzotero/callback`). The bridge trusts the CAs in
+  `data/ca-certificates/` like the portal.
+- In Semantic Zotero: connection "bridge", bridge address `<WEB_LIBRARY_URL>/s2/graph/v1`.
 
 ## Data and backups
 

@@ -9,3 +9,4 @@ src/server/stream-server            master@2026-09-02      9dc1725f71f816a2821c6
 src/server/tinymce-clean-server     master@2017-06-29      5be2a0d367133b728872bee9975beed1c9e74898
 src/server/translation-server       master@2026-07-31      3a9d17614896fc1fea73d7b880ea79273b605275
 src/server/web-library              v1.8.2                 9f6cf7923fbab6f55da46586793ab0a2f9a2dc84
+src/server/s2-bridge                v0.3.0                 4329fb56a841c48325b2ab3ae01bbd10b67d7065

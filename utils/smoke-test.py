@@ -247,6 +247,8 @@ def portal_key_tests(get, userID):
 		if groups:
 			status, _, _ = api('POST', f"/groups/{groups[0]['id']}/items", [{'itemType': 'book', 'title': 'x'}], key=key)
 			check('Keys: bridge key cannot write to the group', status == 403, status)
+		if ENV.get('S2_BRIDGE_URL'):
+			portal_bridge_tests(key)
 		_, _, page = get('/settings/keys')
 		check('Keys: listed masked', name in page and '…' + key[-4:] in page and key not in page)
 		added = page.split(f'name="id" value="{key[-4:]}"', 1)[-1].split('name="added" value="', 1)[-1].split('"', 1)[0]
@@ -261,6 +263,23 @@ def portal_key_tests(get, userID):
 			api('DELETE', f'/keys/{key}', key=key)
 	status, _, page = get('/')
 	check('Keys: web-library menu links to the API keys', '"href":"/settings/keys"' in page)
+
+
+def portal_bridge_tests(key):
+	"""Semantic Scholar Bridge under /s2/: public status, logins checked by the bridge, portal bridge key accepted"""
+	status, _, body = request('GET', f'{PORTAL}/s2/healthz')
+	check('Bridge: reachable through the portal', status == 200 and body == b'ok', status)
+	status, _, body = request('GET', f'{PORTAL}/s2/')
+	check('Bridge: status page', status == 200 and b'Semantic Scholar Bridge' in body, status)
+	paper = f'{PORTAL}/s2/graph/v1/paper/DOI:10.1038/nature12373?fields=title'
+	status, _, _ = request('GET', paper)
+	check('Bridge: request without login refused', status == 401, status)
+	# Malformed, so the bridge refuses it itself: invalid keys count towards the dataserver's block
+	status, _, _ = request('GET', f'{PORTAL}/s2/graph/v1/paper/x', headers={'Zotero-API-Key': 'bad'})
+	check('Bridge: invalid key refused', status == 401, status)
+	# 503: Semantic Scholar busy (without a key of its own the bridge shares the anonymous quota)
+	status, _, body = request('GET', paper, headers={'Zotero-API-Key': key})
+	check('Bridge: portal key of a shared-group member accepted', status in (200, 503), f"{status} {body[:200]}")
 
 
 def portal_group_tests(admin, adminID):

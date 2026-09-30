@@ -13,3 +13,6 @@
 [submodule "src/server/translation-server"]
 	path = src/server/translation-server
 	url = https://github.com/zotero/translation-server
+[submodule "src/server/s2-bridge"]
+	path = src/server/s2-bridge
+	url = https://github.com/ILS-Research/semantic-scholar-api-key-bridge-for-semantic-zotero.git
