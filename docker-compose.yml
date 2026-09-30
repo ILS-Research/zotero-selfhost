@@ -201,6 +201,8 @@ services:
     volumes:
       # Public downloads page and files (/downloads), see README
       - ./data/downloads:/var/www/downloads:ro
+      # Extra trusted CAs (*.crt), e.g. an internal CA signing the OIDC provider, see README
+      - ./data/ca-certificates:/usr/local/share/ca-certificates/extra:ro
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${PORTAL_PORT:-8184}:80"
     networks: [default, backend, translate]
