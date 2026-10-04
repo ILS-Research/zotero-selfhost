@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { Readable } from 'node:stream';
 import { redirect } from '@sveltejs/kit';
 import { config } from '$lib/server/config';
-import { DOWNLOAD_TYPES, latest, resolveDownload } from '$lib/server/downloads';
+import { DOWNLOAD_TYPES, INLINE_TYPES, SANDBOX_CSP, latest, resolveDownload } from '$lib/server/downloads';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ params, locals }) => {
@@ -26,6 +26,7 @@ export const GET: RequestHandler = ({ params, locals }) => {
 		'X-Content-Type-Options': 'nosniff',
 		'Cache-Control': ext === 'json' ? 'no-cache' : 'public, max-age=300'
 	};
-	if (ext !== 'json' && ext !== 'txt') headers['Content-Disposition'] = `attachment; filename="${file.split('/').pop()}"`;
+	if (!INLINE_TYPES.has(ext)) headers['Content-Disposition'] = `attachment; filename="${file.split('/').pop()}"`;
+	if (ext === 'html') headers['Content-Security-Policy'] = SANDBOX_CSP;
 	return new Response(Readable.toWeb(fs.createReadStream(file)) as ReadableStream, { headers });
 };

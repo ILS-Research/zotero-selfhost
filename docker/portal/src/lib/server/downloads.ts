@@ -6,8 +6,24 @@ export const DOWNLOADS_DIR = '/var/www/downloads';
 export const DOWNLOAD_TYPES: Record<string, string> = {
 	xpi: 'application/x-xpinstall', json: 'application/json', pdf: 'application/pdf',
 	txt: 'text/plain; charset=utf-8', png: 'image/png', jpg: 'image/jpeg', svg: 'image/svg+xml',
-	zip: 'application/zip'
+	zip: 'application/zip',
+	// Static pages such as a tutorial or slides, with their styles, scripts and fonts. They are shown in a sandbox
+	// (see SANDBOX_CSP), not with the portal's own origin.
+	html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', js: 'text/javascript; charset=utf-8',
+	woff: 'font/woff', woff2: 'font/woff2'
 };
+
+/** Types shown in the browser instead of saved as a file (not svg: opened directly it could run scripts unsandboxed) */
+export const INLINE_TYPES = new Set(['json', 'txt', 'html', 'css', 'js', 'png', 'jpg', 'woff', 'woff2']);
+
+/**
+ * CSP for HTML from data/downloads. "sandbox" without allow-same-origin gives the page an opaque origin: its
+ * scripts (e.g. reveal.js slides) run, but cannot use the portal's cookies or read portal responses. Resources only
+ * from the portal itself, no forms.
+ */
+export const SANDBOX_CSP = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'none'; "
+	+ "script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; "
+	+ "form-action 'none'; frame-ancestors 'self'";
 
 const extension = (file: string) => path.extname(file).slice(1).toLowerCase();
 

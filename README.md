@@ -189,7 +189,10 @@ The portal serves `data/downloads/` at `/downloads`, **without login**: Zotero c
 - `/downloads` shows `data/downloads/index.<language>.html` (e.g. `index.en.html`, `index.de.html`), else
   `index.html`: an HTML fragment you write yourself (e.g. plugins, links, the desktop client setup). Without
   one, the page lists the files.
-- `/downloads/<path>` returns the file. Allowed types: xpi, json, pdf, txt, png, jpg, svg, zip; dot files
+- `/downloads/<path>` returns the file. Allowed types: xpi, json, pdf, txt, png, jpg, svg, zip, and for static
+  pages (e.g. a tutorial or reveal.js slides) html, css, js, woff, woff2. HTML is shown in a CSP sandbox
+  (opaque origin, scripts allowed, resources only from the portal), so its scripts cannot use the portal's
+  session; svg, xpi, pdf and zip are sent as attachments; dot files
   and paths outside the directory are refused.
 - `/downloads/<dir>/latest` redirects to the newest file in `<dir>` by the version number in its name
   (`plugin-1.2.10.xpi` beats `plugin-1.2.9.xpi`), so the page can link to "the latest version".
