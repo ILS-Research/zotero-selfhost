@@ -64,8 +64,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	const response = await resolve(event, { transformPageChunk: ({ html }) => html.replace('%lang%', language) });
-	// Portal pages; the web-library page loads its own scripts
-	if (event.route.id !== '/[...rest]' && response.headers.get('content-type')?.startsWith('text/html')) {
+	// Portal pages; the web-library page loads its own scripts, HTML from data/downloads brings its sandbox CSP
+	if (event.route.id !== '/[...rest]' && response.headers.get('content-type')?.startsWith('text/html')
+		&& !response.headers.has('Content-Security-Policy')) {
 		response.headers.set('Content-Security-Policy', CSP);
 	}
 	return response;
