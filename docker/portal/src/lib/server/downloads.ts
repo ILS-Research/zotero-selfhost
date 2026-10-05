@@ -66,9 +66,21 @@ export function downloadsPage(language: string): string | null {
 	return null;
 }
 
-/** Newest file in `dir` by the version number in its name (name-1.2.10.xpi > name-1.2.9.xpi) */
+/**
+ * Version of a file name as numbers for comparing: name-1.2.10.xpi > name-1.2.9.xpi; a pre-release (1.0.0rc3,
+ * 1.0.0-rc.3, 1.0.0b1) counts after its numbers as [-1, n] so 1.0.0rc1 < 1.0.0rc3 < 1.0.0.
+ */
+export function versionKey(file: string): number[] {
+	const m = /(\d+(?:\.\d+)+)(?:-?([a-z]+)\.?(\d+))?/i.exec(path.basename(file));
+	if (!m) return [0];
+	const nums = m[1].split('.').map(Number);
+	while (nums.length < 4) nums.push(0);
+	return m[2] ? [...nums, -1, Number(m[3])] : [...nums, 0, 0];
+}
+
+/** Newest file in `dir` by the version number in its name (name-1.2.10.xpi > name-1.2.9.xpi, 1.0.0rc3 > 1.0.0rc1) */
 export function latest(dir: string): string | null {
-	const version = (f: string) => (/(\d+(?:\.\d+)+)/.exec(path.basename(f))?.[1] ?? '0').split('.').map(Number);
+	const version = versionKey;
 	const compare = (a: number[], b: number[]) => {
 		for (let i = 0; i < Math.max(a.length, b.length); i++) {
 			if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) - (b[i] ?? 0);
