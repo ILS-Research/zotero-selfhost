@@ -3,14 +3,19 @@ import { config, env } from '$lib/server/config';
 import { getWebLibraryKey } from '$lib/server/accounts';
 import { hasDownloads } from '$lib/server/downloads';
 import template from '$lib/server/web-library.html?raw';
+import { zoteroOrgTarget } from '$lib/server/zoteroLinks';
+import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 // JSON that is safe inside <script>
 const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003C').replace(/>/g, '\\u003E').replace(/&/g, '\\u0026');
 
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals, url }) => {
 	const { t } = locals;
 	const user = locals.user!;
+	// Links the desktop app makes for zotero.org ("New Group…", "View Online"), see zoteroLinks.ts
+	const target = await zoteroOrgTarget(url.pathname, user);
+	if (target) redirect(302, target);
 	const webConfig = {
 		userId: String(user.userID),
 		userSlug: user.username,

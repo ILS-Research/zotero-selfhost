@@ -28,7 +28,7 @@
 	{:else}
 		<p>{t('You are not a member of any group yet.')}</p>
 	{/if}
-	<h2>{t('New group')}</h2>
+	<h2 id="new">{t('New group')}</h2>
 	<p>{t('Groups are private: only their members see them. You become the owner and can then add colleagues.')}</p>
 	<form method="post">
 		<input type="hidden" name="csrf" value={data.csrf}>
