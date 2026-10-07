@@ -1,0 +1,66 @@
+From: jannefleischer <janne.fleischer@ils-forschung.de>
+Subject: [PATCH] Self-hosted without TTS backend: no server voices, 404 for the rest
+
+With $TTS_TABLE empty (self-hosted, no DynamoDB/providers) /tts/voices threw a 500, which the
+client retries for seconds before giving up. Now it answers {} (the client then offers the
+operating system's voices) and sample/speak/credits answer 404.
+---
+diff --git a/controllers/TTSController.php b/controllers/TTSController.php
+index 33f8516..f7395a9 100644
+--- a/controllers/TTSController.php
++++ b/controllers/TTSController.php
+@@ -61,11 +61,24 @@ class TTSController extends ApiController {
+ 		return $config['ttsTestKey'] ?? null;
+ 	}
+ 
++	/** Whether the TTS backend is set up (self-hosted servers usually leave $TTS_TABLE empty). */
++	private static function isConfigured(): bool {
++		return !empty(Z_CONFIG::$TTS_TABLE);
++	}
++
+ 	private static $providerClasses = null;
+ 
+ 	public function voices() {
+ 		$this->allowMethods(['GET']);
+ 
++		// Self-hosted without the TTS backend (DynamoDB, providers): no server voices, so the client
++		// offers only the voices of the operating system instead of retrying a server error.
++		if (!self::isConfigured()) {
++			header("Content-Type: application/json");
++			echo '{}';
++			return;
++		}
++
+ 		if (!empty($this->userID)) {
+ 			$standardUsage = $this->getCreditsRemaining($this->userID, 'standard');
+ 			$premiumUsage = $this->getCreditsRemaining($this->userID, 'premium');
+@@ -87,6 +100,9 @@ class TTSController extends ApiController {
+ 
+ 
+ 	public function sample() {
++		if (!self::isConfigured()) {
++			$this->e404("Read aloud is not available on this server");
++		}
+ 		$hexID = $_GET['voice'] ?? '';
+ 		if (empty($hexID)) {
+ 			$this->e400("'voice' not provided");
+@@ -136,6 +152,9 @@ class TTSController extends ApiController {
+ 
+ 
+ 	public function speak() {
++		if (!self::isConfigured()) {
++			$this->e404("Read aloud is not available on this server");
++		}
+ 		$this->allowMethods(['GET', 'POST']);
+ 
+ 		// Arena mode (GET only) -- disabled if ArenaConfig.inc.php is absent
+@@ -472,6 +491,9 @@ class TTSController extends ApiController {
+ 
+ 
+ 	public function credits() {
++		if (!self::isConfigured()) {
++			$this->e404("Read aloud is not available on this server");
++		}
+ 		$this->allowMethods(['GET']);
+ 
+ 		if (empty($this->userID)) {
