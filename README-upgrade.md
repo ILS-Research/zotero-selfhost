@@ -88,6 +88,7 @@ Server-side API compatibility was verified for the Zotero client at `zotero/zote
 | `0005` | Integer values for `content-length-range` in the S3 POST policy. Garage rejects strings, AWS accepts both. |
 | `0007` | Zero-padded hour (`H` instead of `G`) in the S3 POST policy expiration. Before 10:00 UTC upstream produces `T7:15:49Z`, which Garage rejects as invalid. |
 | `0006` | File viewing (`/file/view`, `/file/view/url`) returns a presigned S3 URL when `ATTACHMENT_PROXY_URL` is empty. zotero.org uses an attachment proxy that isn't public. Without the patch the URL is relative, and the web-library's PDF viewer gets HTML (`Invalid PDF structure`). |
+| `0008` | Read aloud without a TTS backend (`TTS_TABLE` empty): `/tts/voices` answers `{}` and `/tts/sample`, `/tts/speak`, `/tts/credits` answer 404. Upstream throws a 500 (no DynamoDB table), which Zotero 9+ retries for seconds before failing; now it offers the operating system's voices right away. |
 
 `utils/patch.sh --check` tests whether the patches still apply. `utils/update.sh` runs it after moving the submodules.
 
@@ -100,6 +101,7 @@ Server-side API compatibility was verified for the Zotero client at `zotero/zote
 | Elasticsearch + indexer Lambda | Not used (patch `0004`). Upstream fills the index with an external Lambda that isn't open source. The previous package ran Elasticsearch, but its index was never filled. |
 | SNS | Not used (`SNS_ALERT_TOPIC` empty) |
 | SQS | Not used (`REINDEX_QUEUE_URL` empty) |
+| Read aloud (TTS providers, DynamoDB credits table, S3 audio cache) | Not used (patch `0008`): no server voices, the client uses the operating system's voices |
 
 ### Configuration
 
@@ -207,7 +209,11 @@ The official client works if two preferences are set:
 - `extensions.zotero.api.url`
 - `extensions.zotero.streaming.url`
 
-Login, sync and streaming read these preferences in place of the hardcoded values. The previous
+Login, sync and streaming read these preferences in place of the hardcoded values. Other web links of the client
+("New Group…", a group or library opened online, "View Online", "Create Account") are hard-wired to zotero.org.
+The companion plugin [Zotero Custom Cloud Modifier](https://gitlab.com/ils-research/zotero-plugins/zotero-custom-cloud-modifier)
+sets the two preferences on first start (not while the client is logged in to another server) and sends those links
+to the portal, which maps them to its own pages (see portal). Each deployment builds its own copy from a `config.env`. The previous
 `zfs.js` patch for file uploads isn't needed any more, because the dataserver now hands out
 `S3_PUBLIC_URL` itself. If a custom build is ever needed, use `npm run build` and `app/scripts/dir_build`
 in the client repository.
@@ -233,7 +239,28 @@ On zotero.org, zotero.org itself is that website. Here the `portal` service take
   - The user has to confirm explicitly on the `/login?session=…` page, which carries a CSRF token.
   - A session tied to another account is rejected.
 - **Several logins at once** (tabs, reloads) keep their own `state` and `nonce` and don't interfere.
+- **Built with SvelteKit** (Svelte 5, adapter-node): server-rendered forms without client-side JavaScript, which
+  keeps a strict Content Security Policy. The first version was plain Node.js.
+- **Languages:** English base with a German translation, chosen from the browser or with the language switcher on
+  every page (`PORTAL_LANGUAGE` fixes one).
+- **Groups:** users manage groups themselves at `/settings/groups` (linked in the web-library menu): create private
+  groups, add colleagues by username or email, set roles; the owner changes settings, hands the group over or
+  deletes it. Changes go through the dataserver's super-user API, which also clears its caches.
+- **API keys:** `/settings/keys` creates keys for other programs (read, or read and write), lists them masked and
+  deletes them.
+- **Downloads:** an optional public page `/downloads` serves `data/downloads/` without login (plugins, their
+  `updates.json`, setup instructions). `/downloads/<dir>/latest` redirects to the newest file and ranks pre-releases
+  (`1.0.0rc3` > `1.0.0rc1`, before `1.0.0`); static HTML pages (e.g. slides) are served in a CSP sandbox.
+- **zotero.org links of the desktop client:** `/groups/new` → the new-group form, `/groups` → the groups page,
+  `/groups/<id>[/items/<key>]` and `/users/<id>[/items/<key>]` → the web-library (own library and groups only).
+- **Extra trusted CAs** from `data/ca-certificates/*.crt`, e.g. an internal CA that signs the OIDC provider.
 - **Private network for super-user calls:** the dataserver only accepts super-user requests from private addresses. portal and dataserver therefore share an internal network with an RFC 1918 subnet (`10.203.77.0/28`). If the default Docker network is private too, requests coming in through a reverse proxy on the host would also count as private. Check this for your Docker address pools.
+
+### Semantic Scholar Bridge (optional, new)
+
+`src/server/s2-bridge` (pinned in `versions.lock`) shares one Semantic Scholar API key with the users, e.g. for the
+Zotero plugin Semantic Zotero or AI assistants. The portal forwards `/s2/` to it. Access with an API key that proves
+membership in the shared group, with OIDC access tokens, or both (`S2_BRIDGE_AUTH`); see README.md.
 
 ### Scripts
 
@@ -247,7 +274,7 @@ On zotero.org, zotero.org itself is that website. Here the `portal` service take
 | `bin/create-api-key.sh` | Create an API key with username and password |
 | `utils/update.sh [name ref \| --verify]` | Show pinned and upstream versions, pin a submodule to a tag or commit (checks patches, updates `versions.lock` and `WEB_LIBRARY_COMMIT`) |
 | `utils/patch.sh [--check]` | Test the patches or apply them to the dataserver submodule |
-| `utils/smoke-test.py [--public]` | End-to-end check with 25 to 30 checks, depending on the login mode, `--public` goes through the client-facing URLs |
+| `utils/smoke-test.py [--public]` | End-to-end check (about 60 to 70 checks depending on the login mode), `--public` goes through the client-facing URLs |
 
 ## Previous README: what still applies
 
@@ -285,7 +312,7 @@ On zotero.org, zotero.org itself is that website. Here the `portal` service take
 
 ## Tests
 
-`utils/smoke-test.py` passes all checks (25 with OIDC only, 30 with OIDC and password login), both locally and through a TLS reverse proxy (`--public`):
+`utils/smoke-test.py` passes all checks (68 with OIDC and password login on our deployment), both locally and through a TLS reverse proxy (`--public`):
 
 - Schema, login (including a wrong password)
 - Items, notes (tinymce-clean), group library
@@ -298,6 +325,11 @@ On zotero.org, zotero.org itself is that website. Here the `portal` service take
   web-library and the desktop client login; callback with an unknown state rejected; background requests get 401
 - portal with password login: sign-in page, wrong password and missing CSRF token rejected, login as the admin
   user back to the desktop client login, web-library page with the user's configuration
+- portal group management with a temporary second account, API keys (create, list masked, delete, deleted key
+  rejected), downloads page
+
+The desktop client was tested with sync, attachments, a second user and a shared group; the zotero.org link mapping
+with the companion plugin in Zotero 7.0, 8.0, 9.0 and 10.0. The `/tts/*` endpoints were checked after patch `0008`.
 
 The portal's provisioning and the desktop login session were tested directly against the API.
 The OIDC login and the web-library were tested in a browser.
@@ -310,7 +342,7 @@ The OIDC login and the web-library were tested in a browser.
 2. ~~CORS on the S3 bucket~~: done, set by `bin/init.sh`.
 3. **Cache headers** for web-library assets (`Cache-Control: no-cache` with ETag).
 4. ~~Extend the smoke test to the portal~~: done, without a real login (that would need a test user at the provider).
-5. **Update README.md** for the portal: the web-library and desktop client sections still describe the fixed-key and password login.
+5. ~~Update README.md for the portal~~: done.
 
 ### Operations
 
@@ -323,9 +355,8 @@ The OIDC login and the web-library were tested in a browser.
 
 ### Contributing back as a pull request
 
-Not done yet. The aim is to prepare this work so it continues the original repository
-([foxsen/zotero-selfhost](https://github.com/foxsen/zotero-selfhost)) as a clean pull request,
-instead of living on as a diverging fork.
+Open as [foxsen/zotero-selfhost#7](https://github.com/foxsen/zotero-selfhost/pull/7) (branch `pr/upstream`): this
+work continues the original repository as a pull request instead of living on as a diverging fork.
 
 - **Split into reviewable commits**, for example:
   1. submodule updates and removal of the client submodules
@@ -359,6 +390,9 @@ instead of living on as a diverging fork.
 ## Known limitations
 
 - No server-side full-text search. Full text is stored and synced, and clients search their local index.
-- Client texts and links ("Sync with zotero.org", "Create group", "View online") still point to zotero.org. Groups are created with `bin/create-group.sh`.
+- Client texts ("Sync with zotero.org") still name zotero.org. Its links ("New Group…", "View Online") only reach
+  the portal with the companion plugin; without it, groups are created at `/settings/groups` in the portal.
+- Read aloud has no server voices (patch `0008`), and the client's retraction check (`/retractions/…`) has no
+  endpoint here, so retracted items are not flagged.
 - The web-library build pulls assets from zotero.org, and at runtime it loads citation styles from zotero.org.
-- The server preferences have to be set in every client by hand.
+- The server preferences have to be set in every client, by hand or with the companion plugin.

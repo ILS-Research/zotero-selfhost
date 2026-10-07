@@ -171,7 +171,13 @@ login). Fill in its placeholders, keep the sections that match your login config
 
 ## Desktop client
 
-Use the official Zotero client. In Settings → Advanced → Config Editor set:
+Use the official Zotero client. Easiest: build the companion plugin
+[Zotero Custom Cloud Modifier](https://gitlab.com/ils-research/zotero-plugins/zotero-custom-cloud-modifier) for your
+server (`CCM_PORTAL_URL`, `CCM_API_URL`, `CCM_STREAMING_URL` in its `config.env`) and offer it on the downloads page.
+It sets the two preferences below on first start and sends the client's zotero.org links ("New Group…",
+"View Online", "Create Account") to the portal, which maps them to its own pages.
+
+Without the plugin, set in Settings → Advanced → Config Editor:
 
 | Preference | Value |
 | --- | --- |
@@ -278,6 +284,8 @@ so `legacy/export.sh` dumps the databases and copies the files first. Details in
 ## Known limitations
 
 - No server-side full-text search (web-library "All Fields & Tags + full text"). Full text is stored and synced.
+- No read-aloud server voices (no TTS backend; the client offers the operating system's voices, patch `0008`) and
+  no retraction data (`/retractions/…`), so the client doesn't flag retracted items.
 - No self-service registration or password reset; password accounts are created with `bin/create-user.sh`.
 - The web-library downloads fonts, styles and prebuilt reader and note-editor modules from zotero.org at image build time,
   and citation styles at runtime.
