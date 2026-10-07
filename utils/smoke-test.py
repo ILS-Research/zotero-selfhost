@@ -156,6 +156,9 @@ def portal_tests():
 	check('Portal: downloads refuse paths outside the directory', status in (302, 404), status)
 	status, _, _ = request('GET', PORTAL + '/downloads/%2e%2e/%2eenv')
 	check('Portal: downloads refuse encoded paths outside the directory', status in (302, 404), status)
+	# Terms of use: public; 200 with data/terms/terms*.html, else 404 (never the login redirect)
+	status, _, _ = request('GET', PORTAL + '/terms')
+	check('Portal: terms of use reachable without login', status in (200, 404), status)
 
 
 def portal_session():

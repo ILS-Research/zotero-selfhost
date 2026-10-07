@@ -207,6 +207,20 @@ The directory is mounted read-only; changes take effect immediately, no restart 
 and gives it to `DOWNLOADS_OWNER` (`uid:gid`, default root), so a host user can publish without root.
 Files must be world-readable.
 
+## Terms of use
+
+To publish terms of use for your server, put an HTML fragment you write yourself into `data/terms/` (create the
+directory as your user before the first start, otherwise Docker creates it for root):
+`terms.<language>.html` (e.g. `terms.en.html`, `terms.de.html`), else `terms.html`; a language without its own file gets
+one of the others. The portal shows it at
+`/terms`, **without login** (people read it before logging in), and then links it at the bottom of every portal page
+and in the web-library's user menu. Without a file, `/terms` answers 404 and no link appears. Changes apply at once.
+
+The desktop client's own link ("By using Zotero Storage, you agree to … terms and conditions" under Settings → Sync)
+points to zotero.org; the companion plugin
+[Zotero Custom Cloud Modifier](https://gitlab.com/ils-research/zotero-plugins/zotero-custom-cloud-modifier) sends it
+to `/terms` (or to `CCM_TERMS_URL`).
+
 ## Semantic Scholar Bridge (optional)
 
 The service `s2-bridge` shares one [Semantic Scholar](https://www.semanticscholar.org/product/api) API key

@@ -119,4 +119,6 @@ export default {
 	"Please enter a name (at most 255 characters).": "Bitte gib einen Namen ein (höchstens 255 Zeichen).",
 	"The key %s was created.": "Der Key %s wurde erstellt.",
 	"The key %s was deleted.": "Der Key %s wurde gelöscht.",
+	"Terms of use": "Nutzungsbedingungen",
+	"No terms of use have been published on this server.": "Auf diesem Server sind keine Nutzungsbedingungen veröffentlicht.",
 } satisfies Record<string, string>;

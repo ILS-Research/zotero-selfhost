@@ -16,6 +16,8 @@ function isPublic(path: string): boolean {
 	return (config.useOIDC && (path === '/oidc/start' || path === '/oidc/callback'))
 		|| (config.passwordLogin && path === '/signin')
 		|| path === '/logout'
+		// Terms of use are read before logging in and linked from the desktop client
+		|| path === '/terms'
 		// The Semantic Scholar Bridge checks logins itself (bearer token or API key)
 		|| (bridgeEnabled() && (path === '/s2' || path.startsWith('/s2/')))
 		// Public on purpose: Zotero checks plugin updates without a session

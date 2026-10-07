@@ -2,10 +2,11 @@
 	// Frame of every portal page: title, language switcher, narrow or wide column
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { languageNames } from '$lib/i18n';
+	import { languageNames, translator } from '$lib/i18n';
 
 	let { title, wide = false, children }: { title: string; wide?: boolean; children: Snippet } = $props();
 	const languages = $derived(page.data.languages ?? []);
+	const t = $derived(translator(page.data.language ?? 'en'));
 </script>
 
 <svelte:head><title>{title}</title></svelte:head>
@@ -24,6 +25,9 @@
 	{/if}
 	<h1>{title}</h1>
 	{@render children()}
+	{#if page.data.hasTerms && page.url.pathname !== '/terms'}
+		<footer><a href="/terms">{t('Terms of use')}</a></footer>
+	{/if}
 </main>
 
 <style>
@@ -41,4 +45,5 @@
 	}
 	.lang { float: right; font-size: .85rem; }
 	.lang a, .lang b { margin-left: .5rem; }
+	footer { margin-top: 3rem; font-size: .85rem; }
 </style>

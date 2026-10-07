@@ -232,6 +232,8 @@ services:
     volumes:
       # Public downloads page and files (/downloads), see README
       - ./data/downloads:/var/www/downloads:ro
+      # Your terms of use (/terms), see README
+      - ./data/terms:/var/www/terms:ro
       # Extra trusted CAs (*.crt), e.g. an internal CA signing the OIDC provider, see README
       - ./data/ca-certificates:/usr/local/share/ca-certificates/extra:ro
     ports:

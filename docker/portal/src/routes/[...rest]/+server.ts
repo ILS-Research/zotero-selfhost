@@ -2,6 +2,7 @@
 import { config, env } from '$lib/server/config';
 import { getWebLibraryKey } from '$lib/server/accounts';
 import { hasDownloads } from '$lib/server/downloads';
+import { hasTerms } from '$lib/server/terms';
 import template from '$lib/server/web-library.html?raw';
 import { zoteroOrgTarget } from '$lib/server/zoteroLinks';
 import { redirect } from '@sveltejs/kit';
@@ -27,18 +28,20 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		libraries: { includeMyLibrary: true, includeUserGroups: true }
 	};
 	const downloads = hasDownloads() ? [{ label: t('Downloads'), href: '/downloads' }] : [];
+	const terms = hasTerms() ? [{ label: t('Terms of use'), href: '/terms' }] : [];
 	const menu = {
 		desktop: [
 			{ label: 'My Library', href: '/', active: true },
 			{ label: t('Groups'), href: '/settings/groups' },
 			...downloads,
-			{ label: user.username, dropdown: true, truncate: true, entries: [{ label: t('API keys'), href: '/settings/keys' }, { label: t('Log out'), href: '/logout' }] }
+			{ label: user.username, dropdown: true, truncate: true, entries: [{ label: t('API keys'), href: '/settings/keys' }, ...terms, { label: t('Log out'), href: '/logout' }] }
 		],
 		mobile: [
 			{ label: 'My Library', href: '/', active: true },
 			{ label: t('Groups'), href: '/settings/groups' },
 			...downloads,
 			{ label: t('API keys'), href: '/settings/keys' },
+			...terms,
 			{ label: t('Log out'), href: '/logout' }
 		]
 	};
