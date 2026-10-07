@@ -177,6 +177,24 @@ services:
   # the users (Semantic Zotero, MCP servers). Reached only through the portal (<WEB_LIBRARY_URL>/s2/),
   # it checks logins itself: OIDC tokens and/or API keys of members of the shared group (created in
   # the portal under API keys), checked against this dataserver. See README.
+  # Optional push monitor for Uptime Kuma: checks the public URLs and calls the push URLs (utils/status-push.sh)
+  status-push:
+    profiles: [status-push]
+    image: curlimages/curl:8.22.0
+    entrypoint: ["/bin/sh", "/status-push.sh"]
+    environment:
+      STREAMING_URL: ${STREAMING_URL:?}
+      ZOTERO_API_URL: ${ZOTERO_API_URL:?}
+      WEB_LIBRARY_URL: ${WEB_LIBRARY_URL:?}
+      STATUS_PUSH_STREAM_URL: ${STATUS_PUSH_STREAM_URL:-}
+      STATUS_PUSH_API_URL: ${STATUS_PUSH_API_URL:-}
+      STATUS_PUSH_PORTAL_URL: ${STATUS_PUSH_PORTAL_URL:-}
+      STATUS_PUSH_INTERVAL: ${STATUS_PUSH_INTERVAL:-300}
+    volumes:
+      - ./utils/status-push.sh:/status-push.sh:ro
+      - ./data/ca-certificates:/certs:ro
+    restart: unless-stopped
+
   s2-bridge:
     profiles: [s2-bridge]
     build: ./src/server/s2-bridge

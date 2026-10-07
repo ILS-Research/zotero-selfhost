@@ -242,6 +242,22 @@ login: the bridge checks every request itself.
   `data/ca-certificates/` like the portal.
 - In Semantic Zotero: connection "bridge", bridge address `<WEB_LIBRARY_URL>/s2/graph/v1`.
 
+## Monitoring (optional)
+
+The service `status-push` (profile `status-push`) feeds push monitors of [Uptime Kuma](https://github.com/louislam/uptime-kuma)
+or any service with push URLs. Every `STATUS_PUSH_INTERVAL` seconds (default 300) it checks the stack through its public
+URLs, as the clients reach it, and calls the push URL only when the check passes; the monitor goes down when pushes stop.
+
+| Variable | Check |
+| --- | --- |
+| `STATUS_PUSH_STREAM_URL` | WebSocket handshake on `STREAMING_URL` answers 101 (Kuma has no WebSocket check in every version) |
+| `STATUS_PUSH_API_URL` | `GET <ZOTERO_API_URL>/schema` answers 200 |
+| `STATUS_PUSH_PORTAL_URL` | `GET <WEB_LIBRARY_URL>/downloads` answers 200 |
+
+Create a monitor of type "Push" in Kuma, paste its URL into `.env`, add `status-push` to `COMPOSE_PROFILES` and run
+`docker compose up -d status-push`. Set the monitor's heartbeat interval well above `STATUS_PUSH_INTERVAL` (e.g. 900 s
+for 300 s), so one failed check doesn't raise an alarm. Extra CAs come from `data/ca-certificates/` like the portal's.
+
 ## Data and backups
 
 All state is in bind mounts under `data/`, so a file-level backup of that directory (with the stack stopped,
