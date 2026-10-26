@@ -11,6 +11,11 @@ Originally based on [zotero-prime](https://github.com/SamuelHassine/zotero-prime
 previous package: see [Upgrading from the 2021 package](#upgrading-from-the-2021-package) and
 [README-upgrade.md](README-upgrade.md) for all changes.
 
+> **Alternative:** If you are looking for a self-hosted Zotero sync server that is likely to be maintained
+> long term, take a look at [altero](https://github.com/eseifert/altero) by Erich Seifert. It is an independent
+> project (not based on this one) that serves the unmodified Zotero desktop client from a small stack with SQLite or
+> PostgreSQL (AGPL-3.0, currently beta; see its documentation at <https://altero.run/>).
+
 ## Services
 
 | Service | Image | Purpose |
