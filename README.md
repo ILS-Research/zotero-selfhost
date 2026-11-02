@@ -210,7 +210,7 @@ The portal serves `data/downloads/` at `/downloads`, **without login**: Zotero c
 
 The directory is mounted read-only; changes take effect immediately, no restart needed. `init-data` creates it
 and gives it to `DOWNLOADS_OWNER` (`uid:gid`, default root), so a host user can publish without root.
-Files must be world-readable.
+Files must be world-readable. Under rootless Docker leave it empty, see [Rootless Docker](#rootless-docker).
 
 ## Terms of use
 
@@ -262,6 +262,39 @@ URLs, as the clients reach it, and calls the push URL only when the check passes
 Create a monitor of type "Push" in Kuma, paste its URL into `.env`, add `status-push` to `COMPOSE_PROFILES` and run
 `docker compose up -d status-push`. Set the monitor's heartbeat interval well above `STATUS_PUSH_INTERVAL` (e.g. 900 s
 for 300 s), so one failed check doesn't raise an alarm. Extra CAs come from `data/ca-certificates/` like the portal's.
+
+## Rootless Docker
+
+The stack runs unchanged under [rootless Docker](https://docs.docker.com/engine/security/rootless/), e.g. so
+that people or tools managing it get no root access to the host. What differs:
+
+- **Owners in `data/`.** Container users map to subordinate IDs of the user running the daemon: container root
+  is that user, container uid *n* ≥ 1 is `<subuid start> + n - 1` (see `/etc/subuid`). `init-data` sets the owners
+  from inside the container, so nothing needs to be chowned by hand on a fresh install. As a consequence
+  `data/mysql/` (999) and `data/dataserver-errors/` (33) belong to subordinate IDs on the host; read them through a
+  container (`docker compose exec`, `docker run -v ./data:/d alpine …`), not directly.
+- **`DOWNLOADS_OWNER`** is a uid:gid *inside* the container. Leave it empty (root): under rootless Docker that is
+  the daemon's user, who can then publish to `data/downloads/` without further rights. A host uid such as
+  `1000:1000` would end up as a subordinate ID nobody on the host owns.
+- **Ports** are published by rootlesskit; keep `BIND_ADDRESS=127.0.0.1` behind a reverse proxy on the host.
+  Ports below 1024 on the host need extra setup, the defaults (818x) don't.
+- **Super-user requests** are accepted from private addresses only (see `README-upgrade.md`). Requests through a
+  published port reach the dataserver from a private Docker address, rootful or rootless, so the super-user
+  password stays the actual protection; keep it secret and long.
+- **Moving an existing installation** from a rootful daemon: stop the stack (`docker compose down`, without `-v`),
+  copy the directory with the owners mapped as above, for example
+
+  ```bash
+  # subuid start 624288, daemon user uid 1006 / gid 1003, former host user 1000
+  sudo rsync -aHX --numeric-ids \
+    --usermap=0:1006,1000:1006,999:625286,33:624320 \
+    --groupmap=0:1003,1000:1003,999:625286,33:624320 \
+    old/zotero-selfhost/ /home/<daemon user>/zotero-selfhost/
+  ```
+
+  then start it with the rootless daemon. A first copy while the old stack still runs and a second one after
+  stopping it keep the downtime short. Images are not moved: build them in the new daemon before the switch
+  (`docker compose build`, `docker compose pull`). `init-data` also corrects the owners of the directories it manages on the first start.
 
 ## Data and backups
 
