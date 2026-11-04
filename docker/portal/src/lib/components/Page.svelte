@@ -35,6 +35,10 @@
 	main { max-width: 32rem; margin: 4rem auto; padding: 0 1rem; }
 	main.wide { max-width: 48rem; }
 	:global(button) { font: inherit; padding: .5rem 1.2rem; margin-right: .5rem; cursor: pointer; }
+	/* A link that looks like a button (sign-in with OIDC, see routes/signin) */
+	:global(a.button) { display: inline-block; padding: .5rem 1.2rem; border: 1px solid #767676; border-radius: 3px;
+		background: #efefef; color: #222; text-decoration: none; }
+	:global(a.button:hover) { background: #e5e5e5; }
 	:global(code) { background: rgba(127, 127, 127, .15); padding: 0 .2em; border-radius: 3px; }
 	:global(table) { border-collapse: collapse; }
 	:global(td), :global(th) { padding: .2rem .8rem .2rem 0; text-align: left; }

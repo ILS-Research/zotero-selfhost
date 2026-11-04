@@ -203,7 +203,7 @@ def portal_password_tests(oidc):
 	status, _, page = get('/signin')
 	csrf = page.split('name="csrf" value="', 1)[-1].split('"', 1)[0]
 	check('Portal: password form served', status == 200 and 'type="password"' in page and len(csrf) == 32
-		and ('action="/oidc/start"' in page) == oidc, status)
+		and ('href="/oidc/start"' in page) == oidc and 'action="/oidc/start"' not in page, status)
 	status, _, _ = get('/signin', {'csrf': csrf, 'username': ENV['ZOTERO_ADMIN_USER'], 'password': 'wrong'})
 	check('Portal: wrong password rejected', status == 401, status)
 	status, _, _ = get('/signin', {'csrf': 'bogus', 'username': ENV['ZOTERO_ADMIN_USER'], 'password': ENV['ZOTERO_ADMIN_PASSWORD']})

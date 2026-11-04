@@ -8,7 +8,9 @@
 
 <Page title={t('Log in')}>
 	{#if data.oidcLabel}
-		<form action="/oidc/start"><p><button>{t('Log in with %s', data.oidcLabel)}</button></p></form>
+		<!-- A link, not a form: /oidc/start redirects to the provider, and Chrome/Edge apply the CSP's
+		     form-action 'self' to redirects after a form submission (Firefox only to the first target). -->
+		<p><a class="button" href="/oidc/start">{t('Log in with %s', data.oidcLabel)}</a></p>
 		<hr>
 		<p>{t('Or with username and password:')}</p>
 	{/if}
