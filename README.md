@@ -97,6 +97,9 @@ Set the URLs in `.env` (plus `API_SCHEME`/`API_AUTHORITY`) to the proxied addres
 - Clients must reach `S3_PUBLIC_URL` under exactly that host name, because upload and download URLs are
   signed for it. Keep the `Host` header, don't re-encode the path, and allow large request bodies.
 - With an `https` `WEB_LIBRARY_URL` the portal's session cookie is marked secure; plain HTTP setups work too.
+- Portal sessions are kept in MySQL (`zotero_selfhost.portalSessions`, created by the portal on first use; it
+  stores a hash of the cookie's ID, not the ID), so logins survive a restart of the portal. They end after 8 hours
+  without use. If the database can't be reached, sessions live in the portal's memory until it is back.
 
 After changing `.env`, run `docker compose up -d`. If `WEB_LIBRARY_URL` changes, run `bin/init.sh` again to
 update the S3 CORS rules.

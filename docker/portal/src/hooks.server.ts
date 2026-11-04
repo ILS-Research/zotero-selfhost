@@ -44,7 +44,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 	event.locals.language = language;
 	event.locals.t = translator(language);
-	const session = (event.locals.session = new Session(cookies));
+	const session = (event.locals.session = await Session.load(cookies));
+	try {
+		return await handleRequest(event, resolve, session, language);
+	} finally {
+		await session.save();
+	}
+};
+
+async function handleRequest(event: Parameters<Handle>[0]['event'], resolve: Parameters<Handle>[0]['resolve'],
+	session: Session, language: string): Promise<Response> {
+	const { url, request } = event;
 
 	if (!isPublic(url.pathname)) {
 		const sessionUser = session.data.user;
@@ -72,7 +82,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		response.headers.set('Content-Security-Policy', CSP);
 	}
 	return response;
-};
+}
 
 // Unexpected errors: log them, show a generic page
 export const handleError: import('@sveltejs/kit').HandleServerError = ({ error, event, status }) => {

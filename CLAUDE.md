@@ -18,7 +18,8 @@ plus our own portal, migrations and scripts. README.md describes the stack, READ
   databases. Every step has a `check_` function that inspects the database, so steps must stay idempotent and
   work from any older state. When upstream adds a directory under `misc/db-updates/`, add a matching step.
 - `init-mysql.sh` only creates new databases. It must produce the same schema that `migrate.sh` reaches.
-- Our own tables live in `zotero_selfhost` (`migrations`, `settings`). The shared group's ID is in
+- Our own tables live in `zotero_selfhost` (`migrations`, `settings`, `portalSessions`; the portal creates the
+  last one itself). The shared group's ID is in
   `zotero_selfhost.settings` (`sharedGroupID`); don't assume group 1.
 - The dataserver caches group data, including the owner, in memcached (`<API URL>groupData_<id>`). Code that
   changes groups with plain SQL, like the portal, must delete that key. Prefer the dataserver's PHP API
